@@ -1,0 +1,10 @@
+.DS_Store
+.vscode
+
+/vendor/
+.phpunit.result.cache
+
+npm-debug.log
+/node_modules
+
+.env

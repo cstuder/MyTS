@@ -1,0 +1,35 @@
+{
+  "name": "cstuder/php-skeleton",
+  "description": "XXX PHP project template",
+  "type": "project",
+  "license": "MIT",
+  "autoload": {
+    "psr-4": {
+      "cstuder\\PhpSkeleton\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "cstuder\\PhpSkeleton\\": "tests/"
+    }
+  },
+  "authors": [
+    {
+      "name": "Christian Studer",
+      "email": "cstuder@existenz.ch"
+    }
+  ],
+  "require": {},
+  "require-dev": {
+    "phpunit/phpunit": "^11.0"
+  },
+  "scripts": {
+    "serve": [
+      "Composer\\Config::disableProcessTimeout",
+      "php -S 127.0.0.1:8000 -t public router.php"
+    ],
+    "test": "vendor/bin/phpunit",
+    "deploy-TEST": "git push -f . `git branch --show-current`:TEST && git push -f origin TEST",
+    "deploy-LIVE": "git push . main:LIVE && git push origin LIVE"
+  }
+}
