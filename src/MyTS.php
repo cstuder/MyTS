@@ -78,6 +78,13 @@ class MyTS
     protected string $valuesTable = '';
 
     /**
+     * Latest values table name
+     * 
+     * @var string
+     */
+    protected string $latestValuesTable = '';
+
+    /**
      * Info view name
      * 
      * @param string
@@ -100,6 +107,7 @@ class MyTS
         $this->locationsTable = "myts_{$this->ts}_loc";
         $this->parametersTable = "myts_{$this->ts}_par";
         $this->valuesTable = "myts_{$this->ts}_val";
+        $this->latestValuesTable = "myts_{$this->ts}_latest";
         $this->infoView = "myts_{$this->ts}_view";
     }
 
@@ -392,8 +400,8 @@ class MyTS
      * 
      * @param int $startTime
      * @param int $endTime
-     * @param array/string $locations
-     * @param array/string $parameters
+     * @param array|string $locations
+     * @param array|string $parameters
      * @param bool $failSilently
      * @return array
      * @throws \RuntimeException
@@ -451,14 +459,14 @@ class MyTS
      * 
      * With $timestampLimit, this will only return newer values than the limit.
      * 
-     * @param array $locations
-     * @param array $parameters
+     * @param array|string $locations
+     * @param array|string $parameters
      * @param bool $failSilently
      * @param int $timestampLimit
      * @return array
      * @throws \RuntimeException
      */
-    public function getLatestValues(?array $locations = null, ?array $parameters = null, bool $failSilently = true, $timestampLimit = null): array
+    public function getLatestValues(mixed $locations = null, mixed $parameters = null, bool $failSilently = true, $timestampLimit = null): array
     {
         $values = [];
 
