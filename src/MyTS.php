@@ -112,16 +112,26 @@ class MyTS
     }
 
     /**
+     * Get cleaned time series name
+     * 
+     * @return string
+     */
+    public function getTimeseriesName(): string
+    {
+        return $this->ts;
+    }
+
+    /**
      * Clean up timeseries name
      * 
-     * Removes spaces, backticks and semicolons.
+     * Removes most special characters.
      * 
      * @param string $timeseriesName
      * @return string cleaned name
      */
     private function normalizeTimeseriesName(string $timeseriesName): string
     {
-        return str_replace([' ', '`', ';'], '', $timeseriesName);
+        return preg_replace('/[^A-Za-z0-9\-_]/', '', $timeseriesName);
     }
 
     /**
@@ -499,7 +509,6 @@ class MyTS
                 // Execute query
                 $query = $this->db->prepare($sql);
                 $query->execute();
-                $query->debugDumpParams();
                 $result = $query->fetchAll(\PDO::FETCH_OBJ);
 
                 if (isset($result[0])) {
@@ -526,6 +535,19 @@ class MyTS
     }
 
     /**
+     * Drops all database tables for the current time series completely
+     * 
+     * @return bool Success 
+     */
+    public function dropDatabaseTables(): bool
+    {
+        $sql = "DROP TABLE IF EXISTS `{$this->valuesTable}`, `{$this->locationsTable}`, `{$this->parametersTable}`, `{$this->latestValuesTable}`;";
+
+        $query = $this->db->prepare($sql);
+        return $query->execute();
+    }
+
+    /**
      * Helper function: Connect to a MySQL database and return a MyTS instance
      *
      * @param string $timeseriesName
@@ -538,6 +560,21 @@ class MyTS
     public static function MyTSMySQLFactory(string $timeseriesName, string $host, string $username, string $password, string $database): MyTS
     {
         $dsn = "mysql:host={$host};dbname={$database};charset=utf8";
+       
+        return self::MyTSFromDSNFactory($timeseriesName, $dsn, $username, $password);
+    }
+
+    /**
+     * Helper function: Connect to a MySQL database with a DSN and return a MyTS instance
+     *
+     * @param string $timeseriesName
+     * @param string $dsn
+     * @param string $username
+     * @param string $password
+     * @return MyTS
+     */
+    public static function MyTSFromDSNFactory(string $timeseriesName, string $dsn, string $username, string $password): MyTS
+    {
         $pdo = new \PDO($dsn, $username, $password);
         $pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
 
