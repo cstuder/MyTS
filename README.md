@@ -134,9 +134,6 @@ try {
 // Get all values in this timeseries
 var_dump($myTS->getValues());
 
-// Get all values as table
-var_dump(MyTS::convertResultToTable($myTS->getValues()));
-
 // Get subset of values
 var_dump($myTS->getValues(null, null, 'here'));
 var_dump($myTS->getValues(null, null, 'asbasdf')); // Unknown location, fails silently
