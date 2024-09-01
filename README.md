@@ -8,6 +8,23 @@ Simple PHP package for keeping time series data in relational databases.
 
 ## Overview
 
+This library is used to store meteorolgical time series measured at weather stations for the [api.existenz.ch](https://api.existenz.ch) project. It is a simple and lightweight solution for storing time series data in a relational database.
+
+First create some locations with `createLocation('locationname')`, then some parameters with `createParameter('parametername', 'unit')`. 
+
+Insert values with `insertValue('locationname', 'parametername', $timestamp, $value)`.
+
+Retrieve values with `getValues()` or `getLatestValues()` and you will get a value object likes this:
+
+```php
+stdClass {
+    loc => 'locationname',
+    par => 'parametername',
+    timestamp => 1234567890,
+    val => '1.23'
+}
+```
+
 ### Setup database
 
 The package uses a connection to a MySQL compatible database (using `MyTS::MyTSMySQLFactory` or `MyTS::MyTSFromDSNFactory`) and a timeseries name to create four tables:
@@ -40,17 +57,14 @@ For quickly retrieving the latest values, use `getLatestValues()`. It accepts op
 
 Data is returned as an array of `stdClass` objects with the following fields:
 
-- `location` (string)
-- `parameter` (string)
-- `timestamp` (int)
-- `value` (string)
-
-Some static conversion helpers for special use cases exist:
-
-- `convertResultToTable()` converts the result into a table-like array.
-- `convertResultToRows()` converts the result into an array of rows.
-- `convertResultToResultPerLocation()` converts the result into an array of locations with their values.
-- `convertResultToTablePerLocation()` converts the result into a table-like array of locations with their values.
+```php
+stdClass {
+    loc => 'locationname',
+    par => 'parametername',
+    timestamp => 1234567890,
+    val => '1.23'
+}
+```
 
 ### Maintenance
 
