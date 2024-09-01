@@ -251,5 +251,11 @@ final class MyTSTest extends TestCase
         $values = self::$myTs->getLatestValues('testlocation1', 'testparameter1');
         $this->assertCount(1, $values);
         $this->assertEquals(1.23, $values[0]->val);
+
+        $values = self::$myTs->getLatestValues(['testlocation1', 'testlocation2'], 'testparameter1');
+        $this->assertCount(2, $values);
+
+        $values = self::$myTs->getLatestValues(null, ['testparameter1']);
+        $this->assertCount(2, $values);
     }
 }
