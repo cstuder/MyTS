@@ -559,9 +559,9 @@ class MyTS
      */
     public static function MyTSMySQLFactory(string $timeseriesName, string $host, string $username, string $password, string $database): MyTS
     {
-        $dsn = "mysql:host={$host};dbname={$database};charset=utf8";
+        $dsn = "mysql:host={$host};dbname={$database};charset=utf8;user={$username};password={$password}";
        
-        return self::MyTSFromDSNFactory($timeseriesName, $dsn, $username, $password);
+        return self::MyTSFromDSNFactory($timeseriesName, $dsn);
     }
 
     /**
@@ -569,13 +569,11 @@ class MyTS
      *
      * @param string $timeseriesName
      * @param string $dsn
-     * @param string $username
-     * @param string $password
      * @return MyTS
      */
-    public static function MyTSFromDSNFactory(string $timeseriesName, string $dsn, string $username, string $password): MyTS
+    public static function MyTSFromDSNFactory(string $timeseriesName, string $dsn): MyTS
     {
-        $pdo = new \PDO($dsn, $username, $password);
+        $pdo = new \PDO($dsn);
         $pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
 
         return new MyTS($timeseriesName, $pdo);

@@ -14,13 +14,20 @@ final class MyTSTest extends TestCase
 
     public static function setUpBeforeClass(): void
     {
-        self::$myTs = MyTS::MyTSMySQLFactory(
-            'test',
-            'localhost',
-            'testuser',
-            'testpassword',
-            'testdb'
-        );
+        $timeseries = 'test';
+        $dsn = getenv('MYTS_DSN');
+
+        if($dsn !== false) {
+            self::$myTs = MyTS::MyTSFromDSNFactory($timeseries, $dsn);
+        } else {
+            self::$myTs = MyTS::MyTSMySQLFactory(
+                $timeseries,
+                'localhost',
+                'testuser',
+                'testpassword',
+                'testdb'
+            );
+        }
     }
 
     protected function setUp(): void

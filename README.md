@@ -158,7 +158,11 @@ var_dump($myTS->getLatestValues('asbasdf')); // Unknown location, fails silently
 
 `composer run test`
 
-Requires a running MySQL compatible database on 127.0.0.1 with the following credentials: `testuser`, `testpassword`, `testdb`. (Can be overwritten by a valid DSN in the environment variable `MYTS_DSN`.)
+Requires a running MySQL compatible database on localhost/127.0.0.1 with the following credentials: `testuser`, `testpassword`, `testdb`.
+
+Can be overwritten by a valid DSN including username and password in the environment variable `MYTS_DSN`, for example:
+
+`mysql:host=localhost;dbname=testdb;user=testuser;password=testpassword;charset=utf8`
 
 ## Release
 
