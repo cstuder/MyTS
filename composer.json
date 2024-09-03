@@ -24,6 +24,7 @@
     "phpunit/phpunit": "^11.0"
   },
   "scripts": {
-    "test": "vendor/bin/phpunit"
+    "test": "vendor/bin/phpunit",
+    "test:coverage": "XDEBUG_MODE=coverage vendor/bin/phpunit --coverage-text"
   }
 }
