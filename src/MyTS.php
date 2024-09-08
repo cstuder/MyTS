@@ -555,6 +555,13 @@ class MyTS
      */
     public function deleteValuesOlderThan(int $timestamp): bool
     {
+        // Delete from the latest table first
+        $sql = "DELETE FROM `{$this->latestValuesTable}` WHERE `timestamp` < {$timestamp};";
+
+        $query = $this->db->prepare($sql);
+        $query->execute();
+
+        // Then delete from the values table
         $sql = "DELETE FROM `{$this->valuesTable}` WHERE `timestamp` < {$timestamp};";
 
         $query = $this->db->prepare($sql);
