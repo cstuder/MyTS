@@ -57,6 +57,13 @@ class MyTS
     protected ?\PDOStatement $valueInsertQueryCache = null;
 
     /**
+     * Value insert latest query cache
+     * 
+     * @var PDOStatement
+     */
+    protected ?\PDOStatement $valueInsertLatestQueryCache = null;
+
+    /**
      * Locations table name
      *
      * @var string
@@ -195,7 +202,21 @@ class MyTS
           ) ENGINE=InnoDB DEFAULT CHARSET=utf8;";
 
         $result = $this->db->query($sql);
-        if (!$result) throw new \RuntimeException("Unable to create parameters table: " . $this->db->errorInfo()[2]);
+        if (!$result) throw new \RuntimeException("Unable to create values table: " . $this->db->errorInfo()[2]);
+
+        // Create latest values table
+        $sql = "CREATE TABLE IF NOT EXISTS `{$this->latestValuesTable}` (
+            `timestamp` int(11) NOT NULL,
+            `loc` int(11) unsigned NOT NULL,
+            `par` int(11) unsigned NOT NULL,
+            `val` {$valueDataType} DEFAULT NULL,
+            PRIMARY KEY (`loc`,`par`),
+            CONSTRAINT `fk_{$this->ts}_latest_loc` FOREIGN KEY (`loc`) REFERENCES `{$this->locationsTable}` (`id`),
+            CONSTRAINT `fk_{$this->ts}_latest_par` FOREIGN KEY (`par`) REFERENCES `{$this->parametersTable}` (`id`)
+          ) ENGINE=InnoDB DEFAULT CHARSET=utf8;";
+
+        $result = $this->db->query($sql);
+        if (!$result) throw new \RuntimeException("Unable to create latest values table: " . $this->db->errorInfo()[2]);
 
         // Create info view if required
         if ($createInfoView) {
@@ -373,6 +394,21 @@ class MyTS
 
         if (!$result) throw new \RuntimeException("Unable to insert value: " . $this->db->errorInfo()[2]);
 
+        // Insert latest value
+        if(!$this->valueInsertLatestQueryCache) {
+            $sql = "INSERT INTO `{$this->latestValuesTable}` (`timestamp`, `loc`, `par`, `val`)
+                    VALUES (:timestamp, :loc, :par, :val) ON DUPLICATE KEY UPDATE
+                    `val` = IF(VALUES(timestamp) >= timestamp, VALUES(`val`), `val`),
+                    `timestamp` = IF(VALUES(timestamp) >= timestamp, VALUES(timestamp), timestamp)";
+    
+            $this->valueInsertLatestQueryCache = $this->db->prepare($sql);
+        }
+
+        // Execute query
+        $result = $this->valueInsertLatestQueryCache->execute([':timestamp' => $timestamp, ':loc' => $thisLocation->id, ':par' => $thisParameter->id, ':val' => $value]);
+
+        if (!$result) throw new \RuntimeException("Unable to insert latest value: " . $this->db->errorInfo()[2]);
+
         return true;
     }
 
@@ -484,8 +520,8 @@ class MyTS
         $allLocations = $this->getAllLocations();
         $allParameters = $this->getAllParameters();
 
-        $requestedLocations = self::createValidSet($locations, $allLocations, $failSilently);
-        $requestedParameters = self::createValidSet($parameters, $allParameters, $failSilently);
+        $locationsCondition = self::createSetString('loc', $locations, $allLocations, $failSilently);
+        $parametersCondition = self::createSetString('par', $parameters, $allParameters, $failSilently);
 
         // Set timestamp limit
         $limit = '';
@@ -494,28 +530,19 @@ class MyTS
             $limit = "AND timestamp >= " . intval($timestampLimit);
         }
 
-        // Loop over all locations and parameters and get the latest values
-        foreach ($requestedLocations as $loc) {
-            foreach ($requestedParameters as $par) {
-                // Construct query
-                $sql = "SELECT timestamp, `{$this->locationsTable}`.name AS loc, `{$this->parametersTable}`.name AS par, val
-                FROM `{$this->valuesTable}`
-                JOIN `{$this->locationsTable}` ON `{$this->valuesTable}`.loc = `{$this->locationsTable}`.id
-                JOIN `{$this->parametersTable}` ON `{$this->valuesTable}`.par = `{$this->parametersTable}`.id
-                WHERE `{$this->locationsTable}`.id = {$loc}  AND `{$this->parametersTable}`.id = {$par}
-                {$limit}
-                ORDER BY timestamp DESC LIMIT 1;";
+        // Construct query and fetch data
+        $sql = "SELECT timestamp, `{$this->locationsTable}`.name AS loc, `{$this->parametersTable}`.name AS par, val
+                FROM `{$this->latestValuesTable}`
+                JOIN `{$this->locationsTable}` ON `{$this->latestValuesTable}`.loc = `{$this->locationsTable}`.id
+                JOIN `{$this->parametersTable}` ON `{$this->latestValuesTable}`.par = `{$this->parametersTable}`.id
+                WHERE $parametersCondition AND $locationsCondition
+                {$limit}";
 
-                // Execute query
-                $query = $this->db->prepare($sql);
-                $query->execute();
-                $result = $query->fetchAll(\PDO::FETCH_OBJ);
+        // Execute query
+        $query = $this->db->prepare($sql);
+        $query->execute();
 
-                if (isset($result[0])) {
-                    $values[] = $result[0];
-                }
-            }
-        }
+        $values = $query->fetchAll(\PDO::FETCH_OBJ);
 
         return $values;
     }
@@ -541,7 +568,13 @@ class MyTS
      */
     public function dropDatabaseTables(): bool
     {
-        $sql = "DROP TABLE IF EXISTS `{$this->valuesTable}`, `{$this->locationsTable}`, `{$this->parametersTable}`, `{$this->latestValuesTable}`;";
+        // Delete view first
+        $sql = "DROP VIEW IF EXISTS `{$this->infoView}`;";
+        $query = $this->db->prepare($sql);
+        $query->execute();
+
+        // Drop tables afterwards
+        $sql = "DROP TABLE IF EXISTS `{$this->valuesTable}`, `{$this->latestValuesTable}`, `{$this->locationsTable}`, `{$this->parametersTable}`;";
 
         $query = $this->db->prepare($sql);
         return $query->execute();

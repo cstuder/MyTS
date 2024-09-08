@@ -211,7 +211,7 @@ final class MyTSTest extends TestCase
         self::$myTs->insertValue('testlocation', 'unknownparameter', 1234567890, 1.23);
     }
 
-    public function testInsertingValuesAndRetrievingFiltered(): void 
+    public function testInsertingValuesAndFilteredRetrieving(): void 
     {
         $timestamp = 1234567890;
         
