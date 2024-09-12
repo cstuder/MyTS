@@ -10,19 +10,25 @@ Simple PHP package for keeping time series data in relational databases.
 
 This library is used to store meteorolgical time series measured at weather stations for the [api.existenz.ch](https://api.existenz.ch) project. It is a simple and lightweight solution for storing time series data in a relational database.
 
-First create some locations with `createLocation('locationname')`, then some parameters with `createParameter('parametername', 'unit')`. 
+First create some locations with `createLocation('locationname')`, then some parameters with `createParameter('parametername', 'unit')`.
 
 Insert values with `insertValue('locationname', 'parametername', $timestamp, $value)`.
 
-Retrieve values with `getValues()` or `getLatestValues()` and you will get a value object likes this:
+Retrieve values with `getValues()` or `getLatestValues()` and you will get a `\cstuder\ParseValueholder\Row` filled with `\cstuder\ParseValueholder\Value` objects:
 
 ```php
-stdClass {
-    loc => 'locationname',
-    par => 'parametername',
-    timestamp => 1234567890,
-    val => '1.23'
-}
+$row->getValues();
+
+->
+
+[
+    Value {
+        location => 'locationname',
+        parameter => 'parametername',
+        timestamp => 1234567890,
+        value => '1.23'
+    }
+]
 ```
 
 ### Setup database
@@ -47,6 +53,8 @@ Insert values with `insertValue('locationname', 'parametername', $timestamp, $va
 
 To update a previous values, the same `insertValue()` method can be used.
 
+The convenience methods `insertValueObject()` and `insertValueRow()` can be used to insert values from a `Value` object or a `Row` object respectively.
+
 ### Retrieve values
 
 Use `getValues()` to retrieve values from the timeseries. The method accepts optional start and end times. Filtering by locations and parameters is also available (By default unknown location or parameter names will be ignored, but this can by changed by setting the parameter `$failSilenty` to `false`).
@@ -55,15 +63,21 @@ If no location and/or parameter names are given, all locations and/or parameters
 
 For quickly retrieving the latest values, use `getLatestValues()`. It accepts optional location and parameter names.
 
-Data is returned as an array of `stdClass` objects with the following fields:
+Data is returned as a `\cstuder\ParseValueholder\Row` which is filled by an array of `\cstuder\ParseValueholder\Value` objects:
 
 ```php
-stdClass {
-    loc => 'locationname',
-    par => 'parametername',
-    timestamp => 1234567890,
-    val => '1.23'
-}
+$row->getValues();
+
+->
+
+[
+    Value {
+        location => 'locationname',
+        parameter => 'parametername',
+        timestamp => 1234567890,
+        value => '1.23'
+    }
+]
 ```
 
 ### Maintenance

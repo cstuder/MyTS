@@ -1,7 +1,12 @@
 <?php
+
 declare(strict_types=1);
 
 namespace cstuder\MyTS;
+
+use cstuder\ParseValueholder\Row;
+use cstuder\ParseValueholder\Value;
+use RuntimeException;
 
 /**
  * MySQL Time Series
@@ -346,12 +351,58 @@ class MyTS
     }
 
     /**
+     * Insert a value object into the time series
+     * 
+     * This is a convenience function for inserting a Value object.
+     * 
+     * If $failSilently is set to false, this will throw \RuntimeExceptions on encountering
+     * unknown parameters or locations.
+     * 
+     * Returns true on successful insert.
+     * 
+     * @param Value $value 
+     * @param bool $failSilently 
+     * @return bool 
+     * @throws \RuntimeException 
+     */
+    public function insertValueObject(Value $value, bool $failSilently = false): bool
+    {
+        return $this->insertValue($value->location, $value->parameter, $value->timestamp, $value->value, $failSilently);
+    }
+
+    /**
+     * Insert a row of values into the time series
+     * 
+     * This is a convenience function for inserting a Row object.
+     * 
+     * If $failSilently is set to false, this will throw \RuntimeExceptions on encountering
+     * unknown parameters or locations.
+     * 
+     * Returns true on successful insert.
+     * 
+     * @param Row $row 
+     * @param bool $failSilently 
+     * @return bool 
+     * @throws \RuntimeException 
+     */
+    public function insertValueRow(Row $row, bool $failSilently = false): bool
+    {
+        $result = true;
+
+        foreach ($row as $value) {
+            $result = $this->insertValueObject($value, $failSilently) && $result;
+        }
+
+        return $result;
+    }
+
+    /**
      * Insert or updates value into time series
      *
      * If $failSilently is set to false, this will throw \RuntimeExceptions on encountering
      * unknown parameters or locations.
      * 
-     * Returns true on successfull insert.
+     * Returns true on successful insert.
      * 
      * @param string $location
      * @param string $parameter
@@ -395,12 +446,12 @@ class MyTS
         if (!$result) throw new \RuntimeException("Unable to insert value: " . $this->db->errorInfo()[2]);
 
         // Insert latest value
-        if(!$this->valueInsertLatestQueryCache) {
+        if (!$this->valueInsertLatestQueryCache) {
             $sql = "INSERT INTO `{$this->latestValuesTable}` (`timestamp`, `loc`, `par`, `val`)
                     VALUES (:timestamp, :loc, :par, :val) ON DUPLICATE KEY UPDATE
                     `val` = IF(VALUES(timestamp) >= timestamp, VALUES(`val`), `val`),
                     `timestamp` = IF(VALUES(timestamp) >= timestamp, VALUES(timestamp), timestamp)";
-    
+
             $this->valueInsertLatestQueryCache = $this->db->prepare($sql);
         }
 
@@ -449,10 +500,10 @@ class MyTS
      * @param array|string $locations
      * @param array|string $parameters
      * @param bool $failSilently
-     * @return array
+     * @return Row
      * @throws \RuntimeException
      */
-    public function getValues(?int $startTime = null, ?int $endTime = null, mixed $locations = null, mixed $parameters = null, bool $failSilently = true): array
+    public function getValues(?int $startTime = null, ?int $endTime = null, mixed $locations = null, mixed $parameters = null, bool $failSilently = true): Row
     {
         // Handle start and end
         $timestampCondition = '';
@@ -486,9 +537,16 @@ class MyTS
         $query = $this->db->prepare($sql);
         $query->execute();
 
-        $values = $query->fetchAll(\PDO::FETCH_OBJ);
+        $values = $query->fetchAll(\PDO::FETCH_FUNC, function ($timestamp, $loc, $par, $val) {
+            return new Value(
+                $timestamp,
+                $loc,
+                $par,
+                $val
+            );
+        });
 
-        return $values;
+        return new Row($values);
     }
 
     /**
@@ -509,10 +567,10 @@ class MyTS
      * @param array|string $parameters
      * @param bool $failSilently
      * @param int $timestampLimit
-     * @return array
+     * @return Row
      * @throws \RuntimeException
      */
-    public function getLatestValues(mixed $locations = null, mixed $parameters = null, bool $failSilently = true, $timestampLimit = null): array
+    public function getLatestValues(mixed $locations = null, mixed $parameters = null, bool $failSilently = true, $timestampLimit = null): Row
     {
         $values = [];
 
@@ -542,9 +600,11 @@ class MyTS
         $query = $this->db->prepare($sql);
         $query->execute();
 
-        $values = $query->fetchAll(\PDO::FETCH_OBJ);
+        $values = $query->fetchAll(\PDO::FETCH_FUNC, function ($timestamp, $loc, $par, $val) {
+            return new Value($timestamp, $loc, $par, $val);
+        });
 
-        return $values;
+        return new Row($values);
     }
 
     /**
@@ -600,7 +660,7 @@ class MyTS
     public static function MyTSMySQLFactory(string $timeseriesName, string $host, string $username, string $password, string $database): MyTS
     {
         $dsn = "mysql:host={$host};dbname={$database};charset=utf8;user={$username};password={$password}";
-       
+
         return self::MyTSFromDSNFactory($timeseriesName, $dsn);
     }
 

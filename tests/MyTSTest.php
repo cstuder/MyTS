@@ -1,6 +1,8 @@
 <?php
 
 use cstuder\MyTS\MyTS;
+use cstuder\ParseValueholder\Row;
+use cstuder\ParseValueholder\Value;
 use PHPUnit\Framework\TestCase;
 
 final class MyTSTest extends TestCase
@@ -110,7 +112,7 @@ final class MyTSTest extends TestCase
 
     public function testInsertingValuesAndRetrieving() : void 
     {
-        $this->assertEmpty(self::$myTs->getValues());
+        $this->assertEmpty(self::$myTs->getValues()->getValues());
 
         // Setup
         $location = 'testlocation';
@@ -125,11 +127,11 @@ final class MyTSTest extends TestCase
 
         $values = self::$myTs->getValues();
         $this->assertCount(1, $values);
-        $v = $values[0];
-        $this->assertEquals($location, $v->loc);
-        $this->assertEquals($parameter, $v->par);
+        $v = $values->getValues()[0];
+        $this->assertEquals($location, $v->location);
+        $this->assertEquals($parameter, $v->parameter);
         $this->assertEquals($timestamp, $v->timestamp);
-        $this->assertEquals($value, $v->val);
+        $this->assertEquals($value, $v->value);
         
         // Don't insert second value
         $success = self::$myTs->insertValue($location, 'unknownparameter', 1234567891, 2.34, true);
@@ -148,22 +150,22 @@ final class MyTSTest extends TestCase
         $latest = self::$myTs->getLatestValues();
 
         $this->assertCount(1, $latest);
-        $v = $latest[0];
-        $this->assertEquals($location, $v->loc);
-        $this->assertEquals($parameter, $v->par);
+        $v = $latest->getValues()[0];
+        $this->assertEquals($location, $v->location);
+        $this->assertEquals($parameter, $v->parameter);
         $this->assertEquals($timestamp + 10, $v->timestamp);
-        $this->assertEquals(3.45, $v->val);
+        $this->assertEquals(3.45, $v->value);
 
         // Delete some values
         self::$myTs->deleteValuesOlderThan($timestamp + 5);
 
         $values = self::$myTs->getValues();
         $this->assertCount(1, $values);
-        $v = $latest[0];
-        $this->assertEquals($location, $v->loc);
-        $this->assertEquals($parameter, $v->par);
+        $v = $latest->getValues()[0];
+        $this->assertEquals($location, $v->location);
+        $this->assertEquals($parameter, $v->parameter);
         $this->assertEquals($timestamp + 10, $v->timestamp);
-        $this->assertEquals(3.45, $v->val);
+        $this->assertEquals(3.45, $v->value);
 
         // Update some values
         self::$myTs->insertValue($location, $parameter, $timestamp + 10, 4.56);
@@ -171,11 +173,11 @@ final class MyTSTest extends TestCase
         $latest = self::$myTs->getLatestValues();
 
         $this->assertCount(1, $latest);
-        $v = $latest[0];
-        $this->assertEquals($location, $v->loc);
-        $this->assertEquals($parameter, $v->par);
+        $v = $latest->getValues()[0];
+        $this->assertEquals($location, $v->location);
+        $this->assertEquals($parameter, $v->parameter);
         $this->assertEquals($timestamp + 10, $v->timestamp);
-        $this->assertEquals(4.56, $v->val);
+        $this->assertEquals(4.56, $v->value);
     }
 
     public function testInsertingValuesAchronatically() : void 
@@ -190,9 +192,9 @@ final class MyTSTest extends TestCase
         $values = self::$myTs->getLatestValues();
 
         $this->assertCount(1, $values);
-        $v = $values[0];
+        $v = $values->getValues()[0];
         $this->assertEquals($timestamp, $v->timestamp);
-        $this->assertEquals(1, $v->val);
+        $this->assertEquals(1, $v->value);
     }
 
     public function testInsertingValuesAtUnknownLocation() : void 
@@ -228,28 +230,28 @@ final class MyTSTest extends TestCase
         // Retrieve
         $values = self::$myTs->getValues(null, null, 'testlocation1', 'testparameter1');
         $this->assertCount(1, $values);
-        $this->assertEquals(1.23, $values[0]->val);
+        $this->assertEquals(1.23, $values->getValues()[0]->value);
 
         $values = self::$myTs->getValues(null, null, 'testlocation1');
         $this->assertCount(2, $values);
-        $this->assertEquals(1.23, $values[0]->val);
-        $this->assertEquals(2.34, $values[1]->val);
+        $this->assertEquals(1.23, $values->getValues()[0]->value);
+        $this->assertEquals(2.34, $values->getValues()[1]->value);
 
         $values = self::$myTs->getValues(null, null, null, 'testparameter2');
         $this->assertCount(2, $values);
-        $this->assertEquals(2.34, $values[0]->val);
-        $this->assertEquals(4.56, $values[1]->val);
+        $this->assertEquals(2.34, $values->getValues()[0]->value);
+        $this->assertEquals(4.56, $values->getValues()[1]->value);
 
         $values = self::$myTs->getValues($timestamp - 5, $timestamp - 1);
-        $this->assertEmpty($values);
+        $this->assertEmpty($values->getValues());
 
         $values = self::$myTs->getValues($timestamp, $timestamp);
         $this->assertCount(1, $values);
-        $this->assertEquals(1.23, $values[0]->val);
+        $this->assertEquals(1.23, $values->getValues()[0]->value);
 
         $values = self::$myTs->getValues($timestamp + 3, null);
         $this->assertCount(1, $values);
-        $this->assertEquals(4.56, $values[0]->val);
+        $this->assertEquals(4.56, $values->getValues()[0]->value);
 
         $values = self::$myTs->getValues(null, $timestamp + 1, null, 'testparameter1');
         $this->assertCount(1, $values);
@@ -257,12 +259,33 @@ final class MyTSTest extends TestCase
         // Latest values
         $values = self::$myTs->getLatestValues('testlocation1', 'testparameter1');
         $this->assertCount(1, $values);
-        $this->assertEquals(1.23, $values[0]->val);
+        $this->assertEquals(1.23, $values->getValues()[0]->value);
 
         $values = self::$myTs->getLatestValues(['testlocation1', 'testlocation2'], 'testparameter1');
         $this->assertCount(2, $values);
 
         $values = self::$myTs->getLatestValues(null, ['testparameter1']);
         $this->assertCount(2, $values);
+    }
+
+    public function testInsertingRows(): void {
+        $timestamp = 1234567890;
+        
+        self::$myTs->createLocation('testlocation1');
+        self::$myTs->createParameter('testparameter1');
+
+        $row = new Row();
+        
+        $row->append(new Value($timestamp, 'testlocation1', 'testparameter1', 1.23));
+        $row->append(new Value($timestamp + 1, 'testlocation1', 'testparameter1', 2.34));
+        $row->append(new Value($timestamp + 2, 'testlocation1', 'testparameter1', 3.45));
+
+        self::$myTs->insertValueRow($row);
+
+        $values = self::$myTs->getValues();
+        $this->assertCount(3, $values);
+        $this->assertEquals(1.23, $values->getValues()[0]->value);
+        $this->assertEquals(2.34, $values->getValues()[1]->value);
+        $this->assertEquals(3.45, $values->getValues()[2]->value);
     }
 }
