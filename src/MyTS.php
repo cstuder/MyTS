@@ -655,11 +655,12 @@ class MyTS
      * @param string $username
      * @param string $password
      * @param string $database
+     * @param int $port
      * @return MyTS
      */
-    public static function MyTSMySQLFactory(string $timeseriesName, string $host, string $username, string $password, string $database): MyTS
+    public static function MyTSMySQLFactory(string $timeseriesName, string $host, string $username, string $password, string $database, int $port = 3306): MyTS
     {
-        $dsn = "mysql:host={$host};dbname={$database};charset=utf8;user={$username};password={$password}";
+        $dsn = "mysql:host={$host};port={$port};dbname={$database};charset=utf8;user={$username};password={$password}";
 
         return self::MyTSFromDSNFactory($timeseriesName, $dsn);
     }

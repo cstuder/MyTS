@@ -96,7 +96,7 @@ The method `deleteValuesOlderThan()` indiscriminately deletes all values older t
 Sample usage code (Runnable version in [`sample_usage.php`](docs/sample_usage.php))
 
 ```php
-// Connection: Timeseries name, server, user, password, database
+// Connection: Timeseries name, server, user, password, database, optional port (Default: 3306)
 $myTS = MyTS::MyTSMySQLFactory('test', 'localhost', 'testuser', 'testpassword', 'testdb');
 
 // Create database tables (Only if they don't exist yet), plus an additional info view
@@ -173,7 +173,7 @@ Requires a running MySQL compatible database on localhost/127.0.0.1 with the fol
 
 Can be overwritten by a valid DSN including username and password in the environment variable `MYTS_DSN`, for example:
 
-`mysql:host=localhost;dbname=testdb;user=testuser;password=testpassword;charset=utf8`
+`mysql:host=localhost;port=3306;dbname=testdb;user=testuser;password=testpassword;charset=utf8`
 
 ## Release
 
